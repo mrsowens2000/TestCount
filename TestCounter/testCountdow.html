@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Countdown to May 7, 2026</title>
+  <style>
+    :root { --bg:#0b1220; --card:#111a2e; --text:#e8eefc; --muted:#a8b3d6; --accent:#7aa2ff; }
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; min-height: 100vh; display:flex; align-items:center; justify-content:center; background: radial-gradient(1200px 800px at 20% 10%, #1a2a55 0%, var(--bg) 60%); color: var(--text); }
+    .card { width: min(720px, 92vw); background: color-mix(in oklab, var(--card) 92%, #000 8%); border: 1px solid rgba(255,255,255,.08); border-radius: 20px; padding: 28px; box-shadow: 0 18px 60px rgba(0,0,0,.35); }
+    h1 { margin: 0 0 10px; font-size: clamp(20px, 3vw, 28px); letter-spacing: .2px; }
+    .sub { color: var(--muted); margin: 0 0 18px; line-height: 1.35; }
+    .big { display:flex; gap: 14px; align-items: baseline; padding: 18px 18px; border-radius: 16px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); }
+    .num { font-size: clamp(56px, 8vw, 86px); font-weight: 800; letter-spacing: -1px; color: var(--accent); line-height: 1; }
+    .label { font-size: clamp(16px, 2.4vw, 20px); color: var(--text); opacity: .95; }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+    .pill { padding: 14px 16px; border-radius: 14px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); }
+    .pill .k { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+    .pill .v { font-size: 16px; font-weight: 600; }
+    .barWrap { margin-top: 16px; padding: 14px 16px; border-radius: 14px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); }
+    .barTop { display:flex; justify-content:space-between; gap: 10px; color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+    .bar { height: 12px; border-radius: 999px; background: rgba(255,255,255,.07); overflow:hidden; }
+    .fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), #9b7aff); border-radius: 999px; transition: width .6s ease; }
+    .note { margin-top: 14px; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+    @media (max-width: 520px){ .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Countdown to May 7, 2026</h1>
+    <p class="sub">Begin date: <strong>January 5, 2026</strong> • End date: <strong>May 7, 2026</strong></p>
+
+    <section class="big" aria-live="polite">
+      <div class="num" id="daysLeft">—</div>
+      <div class="label" id="daysLabel">days remaining</div>
+    </section>
+
+    <section class="grid">
+      <div class="pill">
+        <div class="k">Today</div>
+        <div class="v" id="todayText">—</div>
+      </div>
+      <div class="pill">
+        <div class="k">Total window (inclusive)</div>
+        <div class="v" id="totalWindow">—</div>
+      </div>
+      <div class="pill">
+        <div class="k">Days left (excluding today)</div>
+        <div class="v" id="exclusiveLeft">—</div>
+      </div>
+      <div class="pill">
+        <div class="k">Days left (including May 7)</div>
+        <div class="v" id="inclusiveLeft">—</div>
+      </div>
+    </section>
+
+    <section class="barWrap">
+      <div class="barTop">
+        <span id="progressText">Progress: —</span>
+        <span id="rangeText">—</span>
+      </div>
+      <div class="bar"><div class="fill" id="fill"></div></div>
+    </section>
+
+    <p class="note">
+      This page uses your device’s local date and updates automatically after midnight.
+      If today is before Jan 5, it will show when the countdown begins.
+    </p>
+  </main>
+
+  <script>
+    // Fixed dates for your countdown window
+    const START = { y: 2026, m: 0, d: 5 };  // Jan = 0
+    const END   = { y: 2026, m: 4, d: 7 };  // May = 4
+
+    function atLocalMidnight(y, m, d) {
+      // Create a local-time date at midnight to avoid time-of-day rounding issues
+      return new Date(y, m, d, 0, 0, 0, 0);
+    }
+
+    function formatLong(d) {
+      return d.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    }
+
+    function diffDays(a, b) {
+      // Whole-day difference between two local-midnight dates (b - a)
+      const msPerDay = 24 * 60 * 60 * 1000;
+      return Math.round((b - a) / msPerDay);
+    }
+
+    function clamp(n, min, max) {
+      return Math.max(min, Math.min(max, n));
+    }
+
+    function update() {
+      const startDate = atLocalMidnight(START.y, START.m, START.d);
+      const endDate   = atLocalMidnight(END.y, END.m, END.d);
+
+      const now = new Date();
+      const today = atLocalMidnight(now.getFullYear(), now.getMonth(), now.getDate());
+
+      document.getElementById("todayText").textContent = formatLong(today);
+
+      const totalWindowInclusive = diffDays(startDate, endDate) + 1; // inclusive count
+      document.getElementById("totalWindow").textContent = `${totalWindowInclusive} days`;
+
+      // Countdown behavior:
+      // - If before start: show days until start + label
+      // - If within window: show days until end
+      // - If after end: show 0 and "Event day passed"
+      const daysUntilStart = diffDays(today, startDate);
+      const exclusiveLeft = diffDays(today, endDate);       // excluding today
+      const inclusiveLeft = exclusiveLeft + 1;              // including May 7 if today <= end
+
+      const daysLeftEl = document.getElementById("daysLeft");
+      const daysLabelEl = document.getElementById("daysLabel");
+
+      if (today < startDate) {
+        daysLeftEl.textContent = daysUntilStart;
+        daysLabelEl.textContent = "days until the countdown begins (Jan 5)";
+        document.getElementById("exclusiveLeft").textContent = "—";
+        document.getElementById("inclusiveLeft").textContent = "—";
+      } else if (today > endDate) {
+        daysLeftEl.textContent = 0;
+        daysLabelEl.textContent = "days remaining (end date passed)";
+        document.getElementById("exclusiveLeft").textContent = "0 days";
+        document.getElementById("inclusiveLeft").textContent = "0 days";
+      } else {
+        daysLeftEl.textContent = exclusiveLeft;
+        daysLabelEl.textContent = "days remaining until May 7";
+        document.getElementById("exclusiveLeft").textContent = `${exclusiveLeft} days`;
+        document.getElementById("inclusiveLeft").textContent = `${inclusiveLeft} days`;
+      }
+
+      // Progress bar for the window (0% at start, 100% on end)
+      const elapsed = diffDays(startDate, today); // days since start (0 on start)
+      const elapsedClamped = clamp(elapsed, 0, totalWindowInclusive - 1);
+      const pct = (elapsedClamped / (totalWindowInclusive - 1)) * 100;
+
+      document.getElementById("fill").style.width = `${pct}%`;
+      document.getElementById("progressText").textContent = `Progress: ${pct.toFixed(1)}%`;
+      document.getElementById("rangeText").textContent = `${formatLong(startDate)} → ${formatLong(endDate)}`;
+    }
+
+    update();
+
+    // Refresh shortly after midnight local time
+    (function scheduleMidnightRefresh() {
+      const now = new Date();
+      const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5);
+      const ms = nextMidnight - now;
+      setTimeout(() => { update(); scheduleMidnightRefresh(); }, ms);
+    })();
+  </script>
+</body>
+</html>
